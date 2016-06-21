@@ -3,13 +3,14 @@ require ('pg')
 
 class Pizza
 
-    attr_reader(:first_name,:last_name,:topping,:quantity)
+    attr_reader(:first_name,:last_name,:topping,:quantity, :id)
 
     def initialize(options)
-      @first_name = options["first_name"]
-      @last_name  = options["last_name"]
-      @topping    = options["toppings"]
-      @quantity   = options["quantity"].to_i
+      @id =    options['id']
+      @first_name = options['first_name']
+      @last_name  = options['last_name']
+      @topping    = options['topping']
+      @quantity   = options['quantity'].to_i
     end
 
     def save()
@@ -18,37 +19,81 @@ class Pizza
         pizzas (
         first_name,
         last_name,
-        toppings,
+        topping,
         quantity) 
         VALUES (
         '#{@first_name}',
         '#{@last_name}',
         '#{@topping}',
         '#{@quantity}'
-        )" 
+        ) returning *" 
+      result = db.exec(sql)
+      @id = result[0]['id']
+      db.close
+    end
+
+    # def self.orders()
+    #   db =  PG.connect({dbname:'pizza_shop', host: 'localhost'})
+    #   sql = "SELECT pizzas.topping, SUM(pizzas.quantity) as No_ordered FROM pizzas GROUP BY pizzas.topping;" 
+    #   return_info = db.exec(sql)
+    #   return_info.each {|entry| puts "We have #{entry["no_ordered"]} #{entry["topping"]} on order"}
+    #   db.close
+    # end
+
+    def self.update_by_id(id, topping)
+      @topping = topping
+      db =  PG.connect({dbname:'pizza_shop', host: 'localhost'})
+      sql = "UPDATE pizzas SET topping = '#{@topping}' WHERE id = #{id}" 
       db.exec(sql)
       db.close
     end
+
+    def update_topping(topping)
+      @topping = topping
+      db =  PG.connect({dbname:'pizza_shop', host: 'localhost'})
+      sql = "UPDATE pizzas SET topping = '#{@topping}' WHERE id = #{@id}" 
+      db.exec(sql)
+      db.close
+    end
+
+    def self.delete_by_id(id)
+      db =  PG.connect({dbname:'pizza_shop', host: 'localhost'})
+      sql = "DELETE FROM  
+        pizzas WHERE id = #{id}" 
+      db.exec(sql)
+      db.close
+    end        
+
+    def self.cancel_order_by_user(name)
+      db =  PG.connect({dbname:'pizza_shop', host: 'localhost'})
+      sql = "DELETE FROM  
+        pizzas WHERE first_name = '#{name}'" 
+      db.exec(sql)
+      db.close
+    end        
+
+    def self.cancel_pizza_by_user(name,pizza_name)
+      db =  PG.connect({dbname:'pizza_shop', host: 'localhost'})
+      sql = "DELETE FROM  
+        pizzas WHERE first_name = '#{name}' AND topping = '#{pizza_name}'" 
+      db.exec(sql)
+      db.close
+    end        
+
 
     def self.all()
       db =  PG.connect({dbname:'pizza_shop', host: 'localhost'})
       sql = "SELECT * FROM pizzas"
       pizzas = db.exec(sql)
       db.close
-      # pizza_array = []
-      # for pizza in pizzas
-      #   pizza_array << Pizza.new(pizza)
-      # end
-      # puts pizza_array
-      
       pizza_array = pizzas.map {|pizza| Pizza.new(pizza)}
-      puts pizza_array
+      return pizza_array
     end
+
 end
 
-pizza1 = Pizza.new({"first_name" => "Obiwan", "last_name" => "Kenobe", "topping" => "Napoli", "quantity" => 1})
-pizza2 = Pizza.new({"first_name" => "Luke", "last_name" => "Skywalker", "topping" => "Calzone", "quantity" => 5})
+pizza2 = Pizza.new({'first_name' => "Jay", 'last_name' => "Chetty", 'topping' => "Calzone", 'quantity' => 2})
 
 Pizza.all()
-binding.pry
-nil
+# binding.pry
+# nil
